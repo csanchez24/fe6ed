@@ -15,15 +15,38 @@ const useStyles = makeStyles((theme) => ({
       cursor: 'grab',
     },
   },
+  wrapperBadge: {
+    display: 'flex',
+    justifyContent: 'end',
+    alignItems: 'center',
+    flex: 1,
+  },
+  badge: {
+    display: 'inline-block',
+    padding: '.5em 1em',
+    borderRadius: '9999px',
+    backgroundColor: '#3F92FF',
+    color: 'white',
+    fontWeight: 700,
+    fontSize: '10px',
+    lineHeight: '14px',
+    letterSpacing: '-0.5px',
+    textAlign: 'center',
+    marginRight: '17px',
+  },
 }));
 
-const Chat = ({ conversation, setActiveChat }) => {
+const Chat = ({ conversation, setActiveChat, user }) => {
   const classes = useStyles();
   const { otherUser } = conversation;
 
   const handleClick = async (conversation) => {
-    await setActiveChat(conversation.otherUser.username);
+    await setActiveChat(conversation.id, conversation.otherUser.username);
   };
+
+  const messagesHasNotRead = conversation.messages.filter(
+    (message) => !message.hasRead && message.senderId !== user.id
+  ).length;
 
   return (
     <Box onClick={() => handleClick(conversation)} className={classes.root}>
@@ -34,6 +57,11 @@ const Chat = ({ conversation, setActiveChat }) => {
         sidebar={true}
       />
       <ChatContent conversation={conversation} />
+      {messagesHasNotRead > 0 && (
+        <div className={classes.wrapperBadge}>
+          <span className={classes.badge}>{messagesHasNotRead}</span>
+        </div>
+      )}
     </Box>
   );
 };

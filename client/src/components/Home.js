@@ -103,7 +103,7 @@ const Home = ({ user, logout }) => {
           messages: [message],
         };
         newConvo.latestMessageText = message.text;
-        setConversations((prev) => [newConvo, ...prev]);
+        setConversations((prev) => [...prev, newConvo]);
       }
 
       conversations.forEach((convo) => {
@@ -117,8 +117,9 @@ const Home = ({ user, logout }) => {
     [setConversations, conversations]
   );
 
-  const setActiveChat = (username) => {
+  const setActiveChat = (id, username) => {
     setActiveConversation(username);
+    readMessages(id);
   };
 
   const addOnlineUser = useCallback((id) => {
@@ -199,6 +200,26 @@ const Home = ({ user, logout }) => {
     }
   };
 
+  const readMessages = async (conversationId) => {
+    try {
+      const { data } = await axios.post('/api/read-messages', {
+        conversationId,
+      });
+      if (data.messages > 0) {
+        conversations.forEach((convo) => {
+          if (convo.id === conversationId) {
+            convo.messages = convo.messages.map((message) => {
+              return { ...message, hasRead: true };
+            });
+          }
+        });
+        setConversations([...conversations]);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <>
       <Button onClick={handleLogout}>Logout</Button>
@@ -216,6 +237,7 @@ const Home = ({ user, logout }) => {
           conversations={conversations}
           user={user}
           postMessage={postMessage}
+          readMessages={readMessages}
         />
       </Grid>
     </>
