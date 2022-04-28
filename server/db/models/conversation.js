@@ -7,6 +7,10 @@ const Conversation = db.define("conversation", {
     type: Sequelize.STRING,
     allowNull: true,
   },
+  photoUrl: {
+    type: Sequelize.STRING,
+    allowNull: true,
+  },
   userId: {
     type: Sequelize.INTEGER,
     allowNull: false,
