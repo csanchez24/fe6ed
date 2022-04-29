@@ -15,10 +15,6 @@ const Message = db.define("message", {
     allowNull: false,
     defaultValue: false,
   },
-  readAt: {
-    type: Sequelize.DATE,
-    allowNull: true,
-  },
 });
 
 module.exports = Message;

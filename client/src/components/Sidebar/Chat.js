@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box } from '@material-ui/core';
+import { Box, Badge } from '@material-ui/core';
 import { BadgeAvatar, ChatContent } from '../Sidebar';
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -15,23 +15,7 @@ const useStyles = makeStyles((theme) => ({
       cursor: 'grab',
     },
   },
-  wrapperBadge: {
-    display: 'flex',
-    justifyContent: 'end',
-    alignItems: 'center',
-    flex: 1,
-  },
   badge: {
-    display: 'inline-block',
-    padding: '.5em 1em',
-    borderRadius: '9999px',
-    backgroundColor: '#3F92FF',
-    color: 'white',
-    fontWeight: 700,
-    fontSize: '10px',
-    lineHeight: '14px',
-    letterSpacing: '-0.5px',
-    textAlign: 'center',
     marginRight: '17px',
   },
 }));
@@ -44,10 +28,6 @@ const Chat = ({ conversation, setActiveChat, user }) => {
     await setActiveChat(conversation.id, conversation.otherUser.username);
   };
 
-  const messagesHasNotRead = conversation.messages.filter(
-    (message) => !message.hasRead && message.senderId !== user.id
-  ).length;
-
   return (
     <Box onClick={() => handleClick(conversation)} className={classes.root}>
       <BadgeAvatar
@@ -57,10 +37,12 @@ const Chat = ({ conversation, setActiveChat, user }) => {
         sidebar={true}
       />
       <ChatContent conversation={conversation} />
-      {messagesHasNotRead > 0 && (
-        <div className={classes.wrapperBadge}>
-          <span className={classes.badge}>{messagesHasNotRead}</span>
-        </div>
+      {conversation.newMessagesCount > 0 && (
+        <Badge
+          badgeContent={conversation.newMessagesCount}
+          color="primary"
+          classes={{ root: `${classes.badge}` }}
+        />
       )}
     </Box>
   );

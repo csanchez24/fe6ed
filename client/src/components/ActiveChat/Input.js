@@ -15,13 +15,7 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-const Input = ({
-  otherUser,
-  conversationId,
-  user,
-  postMessage,
-  readMessages,
-}) => {
+const Input = ({ otherUser, conversationId, user, postMessage }) => {
   const classes = useStyles();
   const [text, setText] = useState('');
 
@@ -54,7 +48,6 @@ const Input = ({
           value={text}
           name="text"
           onChange={handleChange}
-          onFocus={() => readMessages(conversationId)}
         />
       </FormControl>
     </form>

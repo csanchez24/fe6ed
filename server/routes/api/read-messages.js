@@ -1,17 +1,22 @@
 const router = require("express").Router();
-const { Message } = require("../../db/models");
+const { Conversation, Message } = require("../../db/models");
 const { Op } = require("sequelize");
 
-router.post("/", async (req, res, next) => {
+router.patch("/", async (req, res, next) => {
   try {
     if (!req.user) {
       return res.sendStatus(401);
     }
-    const senderId = req.user.id;
     const { conversationId } = req.body;
+    const senderId = req.user.id;
+
+    const conversation = await Conversation.findByPk(conversationId);
+    if (!conversation) return res.sendStatus(404);
+    if (conversation.user1Id !== senderId && conversation.user2Id !== senderId)
+      return res.sendStatus(403);
 
     const messages = await Message.update(
-      { hasRead: true, readAt: new Date() },
+      { hasRead: true },
       {
         where: {
           conversationId,
