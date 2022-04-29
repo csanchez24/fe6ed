@@ -49,6 +49,38 @@ const Home = ({ user, logout }) => {
     setConversations((prev) => prev.filter((convo) => convo.id));
   };
 
+  const readMessages = useCallback(
+    async (conversationId) => {
+      try {
+        const { data } = await axios.patch('/api/read-messages', {
+          conversationId,
+        });
+        if (data.messages > 0) {
+          socket.emit('find-last-read-message', {
+            conversationId,
+          });
+          setConversations((prevConversation) =>
+            prevConversation.map((convo) => {
+              if (convo.id === conversationId) {
+                const convoCopy = { ...convo };
+                convoCopy.newMessagesCount = 0;
+                convoCopy.messages = convoCopy.messages.map((message) => {
+                  return { ...message, hasRead: true };
+                });
+                return convoCopy;
+              } else {
+                return convo;
+              }
+            })
+          );
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [socket]
+  );
+
   const saveMessage = async (body) => {
     const { data } = await axios.post('/api/messages', body);
     return data;
@@ -71,7 +103,6 @@ const Home = ({ user, logout }) => {
       } else {
         addMessageToConversation(data);
       }
-
       sendMessage(data, body);
     } catch (error) {
       console.error(error);
@@ -97,6 +128,26 @@ const Home = ({ user, logout }) => {
     [setConversations]
   );
 
+  const findLastReadMessage = useCallback(
+    (data) => {
+      const { conversationId } = data;
+      setConversations((prevConversation) =>
+        prevConversation.map((convo) => {
+          if (convo.id === conversationId) {
+            const convoCopy = { ...convo };
+            convoCopy.messageIdForAddAvatar = convo.messages
+              .filter((message) => message.senderId === user.id)
+              .at(-1).id;
+            return convoCopy;
+          } else {
+            return convo;
+          }
+        })
+      );
+    },
+    [user]
+  );
+
   const addMessageToConversation = useCallback(
     (data) => {
       // if sender isn't null, that means the message needs to be put in a brand new convo
@@ -108,7 +159,7 @@ const Home = ({ user, logout }) => {
           messages: [message],
         };
         newConvo.latestMessageText = message.text;
-        setConversations((prev) => [newConvo, ...prev]);
+        setConversations((prev) => [...prev, newConvo]);
       }
 
       setConversations((prevConversation) =>
@@ -117,6 +168,18 @@ const Home = ({ user, logout }) => {
             const convoCopy = { ...convo };
             convoCopy.messages.push(message);
             convoCopy.latestMessageText = message.text;
+            if (
+              user.id !== message.senderId &&
+              activeConversation !== convoCopy.otherUser.username
+            ) {
+              convoCopy.newMessagesCount++;
+            }
+            if (
+              user.id !== message.senderId &&
+              activeConversation === convoCopy.otherUser.username
+            ) {
+              readMessages(convoCopy.id);
+            }
             return convoCopy;
           } else {
             return convo;
@@ -124,11 +187,12 @@ const Home = ({ user, logout }) => {
         })
       );
     },
-    [setConversations]
+    [setConversations, user, activeConversation, readMessages]
   );
 
-  const setActiveChat = (username) => {
+  const setActiveChat = (id, username) => {
     setActiveConversation(username);
+    readMessages(id);
   };
 
   const addOnlineUser = useCallback((id) => {
@@ -163,6 +227,7 @@ const Home = ({ user, logout }) => {
 
   useEffect(() => {
     // Socket init
+    socket.on('find-last-read-message', findLastReadMessage);
     socket.on('add-online-user', addOnlineUser);
     socket.on('remove-offline-user', removeOfflineUser);
     socket.on('new-message', addMessageToConversation);
@@ -170,11 +235,18 @@ const Home = ({ user, logout }) => {
     return () => {
       // before the component is destroyed
       // unbind all event handlers used in this component
+      socket.off('find-last-read-message', findLastReadMessage);
       socket.off('add-online-user', addOnlineUser);
       socket.off('remove-offline-user', removeOfflineUser);
       socket.off('new-message', addMessageToConversation);
     };
-  }, [addMessageToConversation, addOnlineUser, removeOfflineUser, socket]);
+  }, [
+    addMessageToConversation,
+    addOnlineUser,
+    removeOfflineUser,
+    socket,
+    findLastReadMessage,
+  ]);
 
   useEffect(() => {
     // when fetching, prevent redirect
